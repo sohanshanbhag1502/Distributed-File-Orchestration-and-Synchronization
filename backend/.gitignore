@@ -1,0 +1,7 @@
+# ide
+.idea/
+.vscode/
+
+# secrets
+id_passwd.txt
+.env*

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -11,9 +10,18 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
-var jwtKey = []byte("your_secret_key")
+var jwtKey []byte = []byte(getEnv("JWT_KEY"))
+
+func getEnv(key string) string {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	return os.Getenv(key)
+}
 
 type Claims struct {
 	Username string `json:"username"`
@@ -32,7 +40,7 @@ func saveCredentials(username, password string) error {
 }
 
 func validateCredentials(username, password string) bool {
-	data, err := ioutil.ReadFile("id_passwd.txt")
+	data, err := os.ReadFile("id_passwd.txt")
 	if err != nil {
 		log.Printf("Error reading id_passwd.txt: %v\n", err)
 		return false
@@ -63,7 +71,6 @@ func authHandler(c *fiber.Ctx) error {
 	username, password := credentials[0], credentials[1]
 
 	if validateCredentials(username, password) {
-		// Create JWT token with an expiration of 1 hour
 		expirationTime := time.Now().Add(1 * time.Hour)
 		claims := &Claims{
 			Username: username,
@@ -89,6 +96,5 @@ func main() {
 
 	app.Get("/auth/signin", authHandler)
 
-	fmt.Println("System starting... Listening on :8080")
 	log.Fatal(app.Listen(":8080"))
 }

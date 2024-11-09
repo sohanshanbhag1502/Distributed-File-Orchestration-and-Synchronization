@@ -54,7 +54,7 @@ func validateCredentials(username, password string) bool {
 	return false
 }
 
-func authHandler(c *fiber.Ctx) error {
+func signinHandler(c *fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if auth == "" || !strings.HasPrefix(auth, "Basic ") {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
@@ -91,10 +91,55 @@ func authHandler(c *fiber.Ctx) error {
 	}
 }
 
+func checkIfUserNameExists(username string) bool {
+	data, err := os.ReadFile("id_passwd.txt")
+	if err != nil {
+		log.Printf("Error reading id_passwd.txt: %v\n", err)
+		return false
+	}
+	credentials := strings.Split(string(data), "\n")
+	for _, line := range credentials {
+		if strings.Split(line, ":")[0] == username {
+			return true
+		}
+	}
+	return false
+}
+
+func signupHandler(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if auth == "" || !strings.HasPrefix(auth, "Basic ") {
+		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+	}
+
+	payload, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(auth, "Basic "))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Header")
+	}
+	credentials := strings.SplitN(string(payload), ":", 2)
+	if len(credentials) != 2 {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Format")
+	}
+	username, password := credentials[0], credentials[1]
+
+	if checkIfUserNameExists(username) {
+		return c.Status(fiber.StatusBadRequest).SendString("Username already exists")
+	}
+
+	err = saveCredentials(username, password)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+	}
+
+	return c.SendString("User created successfully")
+}
+
 func main() {
 	app := fiber.New()
 
-	app.Get("/auth/signin", authHandler)
+	app.Get("/auth/signin", signinHandler)
+
+	app.Get("/auth/signup", signupHandler)
 
 	log.Fatal(app.Listen(":8080"))
 }

@@ -86,12 +86,6 @@ func signinHandler(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
 
-		// Upgrade to WebSocket
-		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("username", username)
-			return c.Next()
-		}
-
 		return c.JSON(fiber.Map{"token": tokenString})
 	} else {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
@@ -164,6 +158,14 @@ func main() {
 	app := fiber.New()
 
 	app.Get("/auth/signin", signinHandler)
+
+	app.Get("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("username", c.Query("username"))
+			return c.Next()
+		}
+		return c.SendStatus(fiber.StatusUpgradeRequired)
+	}, websocket.New(websocketHandler))
 
 	app.Get("/auth/signup", signupHandler)
 

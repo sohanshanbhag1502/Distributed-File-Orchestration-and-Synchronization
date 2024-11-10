@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 )
@@ -85,6 +86,12 @@ func signinHandler(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
 
+		// Upgrade to WebSocket
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("username", username)
+			return c.Next()
+		}
+
 		return c.JSON(fiber.Map{"token": tokenString})
 	} else {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
@@ -132,6 +139,25 @@ func signupHandler(c *fiber.Ctx) error {
 	}
 
 	return c.SendString("User created successfully")
+}
+
+func websocketHandler(c *websocket.Conn) {
+	username := c.Locals("username").(string)
+	log.Printf("User %s connected via WebSocket", username)
+
+	for {
+		mt, msg, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			break
+		}
+		log.Printf("recv: %s", msg)
+		err = c.WriteMessage(mt, msg)
+		if err != nil {
+			log.Println("write:", err)
+			break
+		}
+	}
 }
 
 func main() {

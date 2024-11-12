@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Cloud-Computing-Big-Data/RR-Team-10-distributed-file-orchestration-and-synchronization/crud"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -156,6 +157,13 @@ func websocketHandler(c *websocket.Conn) {
 
 func main() {
 	app := fiber.New()
+
+	// Example usage of the CreateFile function
+	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))
+
+	if err != nil {
+		log.Fatalf("Error uploading file: %v\n", err)
+	}
 
 	app.Get("/auth/signin", signinHandler)
 

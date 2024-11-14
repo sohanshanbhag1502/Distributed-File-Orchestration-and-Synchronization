@@ -5,3 +5,7 @@
 # secrets
 id_passwd.txt
 .env*
+
+# logs
+*.log
+tmp/

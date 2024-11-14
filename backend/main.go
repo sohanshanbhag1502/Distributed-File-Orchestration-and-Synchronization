@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtKey []byte = []byte(getEnv("JWT_KEY"))
@@ -31,6 +32,13 @@ type Claims struct {
 }
 
 func saveCredentials(username, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	password = string(hashedPassword)
+	
 	entry := fmt.Sprintf("%s:%s\n", username, password)
 	file, err := os.OpenFile("id_passwd.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -49,8 +57,15 @@ func validateCredentials(username, password string) bool {
 	}
 	credentials := strings.Split(string(data), "\n")
 	for _, line := range credentials {
-		if line == fmt.Sprintf("%s:%s", username, password) {
-			return true
+		parts := strings.Split(line, ":")
+		if len(parts) != 2 {
+			continue
+		}
+		if parts[0] == username {
+			err := bcrypt.CompareHashAndPassword([]byte(parts[1]), []byte(password))
+			if err == nil {
+				return true
+			}
 		}
 	}
 	return false
@@ -158,8 +173,10 @@ func websocketHandler(c *websocket.Conn) {
 func main() {
 	app := fiber.New()
 
-	// Example usage of the CreateFile function
+	// Example usage of the CreateFile and DeleteFile functions
 	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))
+
+	err = crud.DeleteFile("/test.txt")
 
 	if err != nil {
 		log.Fatalf("Error uploading file: %v\n", err)

@@ -19,6 +19,20 @@ import (
 
 var jwtKey []byte = []byte(getEnv("JWT_KEY"))
 
+func logger(message string, loglevel string) {
+	file, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Error opening log file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	logger := log.New(file, "", log.LstdFlags)
+	timestamp := time.Now().Format(time.RFC3339)
+	logEntry := fmt.Sprintf("%s - [%s] - %s", timestamp, loglevel, message)
+	logger.Println(logEntry)
+}
+
 func getEnv(key string) string {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -39,7 +53,7 @@ func saveCredentials(username, password string) error {
 	}
 
 	password = string(hashedPassword)
-	
+
 	entry := fmt.Sprintf("%s:%s\n", username, password)
 	file, err := os.OpenFile("id_passwd.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -103,6 +117,8 @@ func signinHandler(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
 
+		logger(username+" signed in", "INFO")
+
 		return c.JSON(fiber.Map{"token": tokenString})
 	} else {
 		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
@@ -149,6 +165,7 @@ func signupHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 	}
 
+	logger(username+" signed up", "INFO")
 	return c.SendString("User created successfully")
 }
 

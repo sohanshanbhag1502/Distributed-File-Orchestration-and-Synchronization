@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -155,19 +156,147 @@ func websocketHandler(c *websocket.Conn) {
 	username := c.Locals("username").(string)
 	log.Printf("User %s connected via WebSocket", username)
 
+	go handleWebSocketConnection(c)
+}
+
+type WebSocketMessage struct {
+	Operation string `json:"operation"`
+	Filepath  string `json:"filepath"`
+	Dirname   string `json:"dirname"`
+	NewPath   string `json:"newPath"`
+	Data      string `json:"data"` // Base64 encoded data for file contents
+}
+
+func handleWebSocketConnection(c *websocket.Conn) {
+	defer c.Close()
+
 	for {
-		mt, msg, err := c.ReadMessage()
+		_, msg, err := c.ReadMessage()
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
-		log.Printf("recv: %s", msg)
-		err = c.WriteMessage(mt, msg)
+
+		var request WebSocketMessage
+		err = json.Unmarshal(msg, &request)
 		if err != nil {
-			log.Println("write:", err)
-			break
+			log.Printf("Error parsing message: %v", err)
+			c.WriteMessage(websocket.TextMessage, []byte("Error: Invalid message format"))
+			continue
+		}
+
+		switch request.Operation {
+		case "createFile":
+			err = handleCreateFile(request, c)
+		case "createFolder":
+			err = handleCreateFolder(request, c)
+		case "deleteFile":
+			err = handleDeleteFile(request, c)
+		case "deleteFolder":
+			err = handleDeleteFolder(request, c)
+		case "listFolderContents":
+			err = handleListFolderContents(request, c)
+		case "previewFile":
+			err = handlePreviewFile(request, c)
+		case "readFile":
+			err = handleReadFile(request, c)
+		case "renameFileOrFolder":
+			err = handleRenameFileOrFolder(request, c)
+		case "updateFile":
+			err = handleUpdateFile(request, c)
+		default:
+			c.WriteMessage(websocket.TextMessage, []byte("Error: Unknown operation"))
+			continue
+		}
+
+		if err != nil {
+			log.Printf("Operation %s failed: %v", request.Operation, err)
+			c.WriteMessage(websocket.TextMessage, []byte("Error: "+err.Error()))
 		}
 	}
+}
+
+// Helper functions for each CRUD operation
+
+func handleCreateFile(request WebSocketMessage, c *websocket.Conn) error {
+	data, err := base64.StdEncoding.DecodeString(request.Data)
+	if err != nil {
+		return err
+	}
+	err = crud.CreateFile(request.Filepath, data)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("File created successfully"))
+	}
+	return err
+}
+
+func handleCreateFolder(request WebSocketMessage, c *websocket.Conn) error {
+	err := crud.CreateFolder(request.Dirname)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("Folder created successfully"))
+	}
+	return err
+}
+
+func handleDeleteFile(request WebSocketMessage, c *websocket.Conn) error {
+	err := crud.DeleteFile(request.Filepath)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("File deleted successfully"))
+	}
+	return err
+}
+
+func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
+	err := crud.DeleteFolder(request.Dirname)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("Folder deleted successfully"))
+	}
+	return err
+}
+
+func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error {
+	contents, err := crud.ListFolderContents(request.Dirname)
+	if err == nil {
+		response, _ := json.Marshal(contents)
+		c.WriteMessage(websocket.TextMessage, response)
+	}
+	return err
+}
+
+func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
+	data, err := crud.PreviewFile(request.Filepath)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
+	}
+	return err
+}
+
+func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
+	data, err := crud.ReadFile(request.Filepath)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
+	}
+	return err
+}
+
+func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
+	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("File or folder renamed successfully"))
+	}
+	return err
+}
+
+func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
+	data, err := base64.StdEncoding.DecodeString(request.Data)
+	if err != nil {
+		return err
+	}
+	err = crud.UpdateFile(request.Filepath, data)
+	if err == nil {
+		c.WriteMessage(websocket.TextMessage, []byte("File updated successfully"))
+	}
+	return err
 }
 
 func main() {
@@ -185,8 +314,18 @@ func main() {
 	app.Get("/auth/signin", signinHandler)
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
+		tokenString := c.Query("token") // Retrieve the jwt token from the query string
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+		if err != nil || !token.Valid {
+			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		}
+
+		// Store claims in context for use in WebSocket
+		c.Locals("username", claims.Username)
 		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("username", c.Query("username"))
 			return c.Next()
 		}
 		return c.SendStatus(fiber.StatusUpgradeRequired)

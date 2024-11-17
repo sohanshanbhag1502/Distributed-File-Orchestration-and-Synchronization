@@ -175,7 +175,7 @@ func websocketHandler(c *websocket.Conn) {
 	username := c.Locals("username").(string)
 	log.Printf("User %s connected via WebSocket", username)
 
-	go handleWebSocketConnection(c)
+	handleWebSocketConnection(c)
 }
 
 type WebSocketMessage struct {
@@ -191,6 +191,7 @@ func handleWebSocketConnection(c *websocket.Conn) {
 
 	for {
 		_, msg, err := c.ReadMessage()
+		fmt.Println(msg)
 		if err != nil {
 			log.Println("read:", err)
 			break
@@ -357,6 +358,7 @@ func main() {
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
 		tokenString := c.Query("auth-token", "")
+		fmt.Println(tokenString)
 		if tokenString == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}

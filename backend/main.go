@@ -11,6 +11,7 @@ import (
 
 	"github.com/Cloud-Computing-Big-Data/RR-Team-10-distributed-file-orchestration-and-synchronization/crud"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -88,7 +89,7 @@ func validateCredentials(username, password string) bool {
 
 func signinHandler(c *fiber.Ctx) error {
 	auth := c.Body()
-	var data map[string]string = make(map[string]string);
+	var data map[string]string = make(map[string]string)
 	err := json.Unmarshal(auth, &data)
 	if err != nil {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -117,8 +118,8 @@ func signinHandler(c *fiber.Ctx) error {
 		logger(username+" signed in", "INFO")
 
 		c.Response().Header.Set("Content-Type", "application/json")
-		c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s", "token":"%s"}`, username, 
-		tokenString)))
+		c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s", "token":"%s"}`, username,
+			tokenString)))
 		return c.SendStatus(200)
 	} else {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -144,7 +145,7 @@ func checkIfUserNameExists(username string) bool {
 
 func signupHandler(c *fiber.Ctx) error {
 	jsonData := c.Body()
-	var data map[string]string = make(map[string]string);
+	var data map[string]string = make(map[string]string)
 	err := json.Unmarshal(jsonData, &data)
 	if err != nil {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -343,6 +344,8 @@ func checkLoggedIn(c *fiber.Ctx) error {
 
 func main() {
 	app := fiber.New()
+	
+	app.Use(cors.New())
 
 	// Example usage of the CreateFile and DeleteFile functions
 	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))

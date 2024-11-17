@@ -11,6 +11,7 @@ import (
 
 	"github.com/Cloud-Computing-Big-Data/RR-Team-10-distributed-file-orchestration-and-synchronization/crud"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -345,6 +346,8 @@ func checkLoggedIn(c *fiber.Ctx) error {
 
 func main() {
 	app := fiber.New()
+	
+	app.Use(cors.New())
 
 	// Example usage of the CreateFile and DeleteFile functions
 	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))

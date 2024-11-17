@@ -88,7 +88,7 @@ func validateCredentials(username, password string) bool {
 
 func signinHandler(c *fiber.Ctx) error {
 	auth := c.Body()
-	var data map[string]string = make(map[string]string);
+	var data map[string]string = make(map[string]string)
 	err := json.Unmarshal(auth, &data)
 	if err != nil {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -117,8 +117,8 @@ func signinHandler(c *fiber.Ctx) error {
 		logger(username+" signed in", "INFO")
 
 		c.Response().Header.Set("Content-Type", "application/json")
-		c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s", "token":"%s"}`, username, 
-		tokenString)))
+		c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s", "token":"%s"}`, username,
+			tokenString)))
 		return c.SendStatus(200)
 	} else {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -144,7 +144,7 @@ func checkIfUserNameExists(username string) bool {
 
 func signupHandler(c *fiber.Ctx) error {
 	jsonData := c.Body()
-	var data map[string]string = make(map[string]string);
+	var data map[string]string = make(map[string]string)
 	err := json.Unmarshal(jsonData, &data)
 	if err != nil {
 		c.Response().Header.Set("Content-Type", "application/json")
@@ -204,7 +204,8 @@ func handleWebSocketConnection(c *websocket.Conn) {
 			c.WriteMessage(websocket.TextMessage, []byte("Error: Invalid message format"))
 			continue
 		}
-
+		request.Filepath = "/app/" + request.Filepath
+		request.Dirname = "/app/" + request.Dirname
 		switch request.Operation {
 		case "createFile":
 			err = handleCreateFile(request, c)

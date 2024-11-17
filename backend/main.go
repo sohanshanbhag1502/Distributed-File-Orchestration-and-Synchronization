@@ -318,6 +318,29 @@ func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
 	return err
 }
 
+func checkLoggedIn(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if auth == "" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	tokenString := strings.Split(auth, " ")[1]
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	username := claims.Username
+	if !checkIfUserNameExists(username) {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	c.Response().Header.Set("Content-Type", "application/json")
+	c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s"}`, username)))
+	return c.SendStatus(200)
+}
+
 func main() {
 	app := fiber.New()
 
@@ -333,7 +356,10 @@ func main() {
 	app.Post("/auth/signin", signinHandler)
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
-		tokenString := c.Query("token") // Retrieve the jwt token from the query string
+		tokenString := c.Query("auth-token", "")
+		if tokenString == "" {
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
@@ -342,7 +368,6 @@ func main() {
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
-		// Store claims in context for use in WebSocket
 		c.Locals("username", claims.Username)
 		if websocket.IsWebSocketUpgrade(c) {
 			return c.Next()
@@ -351,6 +376,8 @@ func main() {
 	}, websocket.New(websocketHandler))
 
 	app.Post("/auth/signup", signupHandler)
+
+	app.Get("/auth/loggedIn", checkLoggedIn)
 
 	log.Fatal(app.Listen(":8080"))
 }

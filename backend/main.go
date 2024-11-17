@@ -87,20 +87,15 @@ func validateCredentials(username, password string) bool {
 }
 
 func signinHandler(c *fiber.Ctx) error {
-	auth := c.Get("Authorization")
-	if auth == "" || !strings.HasPrefix(auth, "Basic ") {
-		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
-	}
-
-	payload, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(auth, "Basic "))
+	auth := c.Body()
+	var data map[string]string = make(map[string]string);
+	err := json.Unmarshal(auth, &data)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Header")
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(`{"message": "Invalid JSON data"}`))
+		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	credentials := strings.SplitN(string(payload), ":", 2)
-	if len(credentials) != 2 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Format")
-	}
-	username, password := credentials[0], credentials[1]
+	username, password := data["username"], data["password"]
 
 	if validateCredentials(username, password) {
 		expirationTime := time.Now().Add(1 * time.Hour)
@@ -114,14 +109,21 @@ func signinHandler(c *fiber.Ctx) error {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		tokenString, err := token.SignedString(jwtKey)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+			c.Response().Header.Set("Content-Type", "application/json")
+			c.Response().SetBody([]byte(`{"message": "Internal Server Error"}`))
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
 		logger(username+" signed in", "INFO")
 
-		return c.JSON(fiber.Map{"token": tokenString})
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s", "token":"%s"}`, username, 
+		tokenString)))
+		return c.SendStatus(200)
 	} else {
-		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(`{"message": "Either Username or Password is incorrect"}`))
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 }
 
@@ -141,32 +143,32 @@ func checkIfUserNameExists(username string) bool {
 }
 
 func signupHandler(c *fiber.Ctx) error {
-	auth := c.Get("Authorization")
-	if auth == "" || !strings.HasPrefix(auth, "Basic ") {
-		return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
-	}
-
-	payload, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(auth, "Basic "))
+	jsonData := c.Body()
+	var data map[string]string = make(map[string]string);
+	err := json.Unmarshal(jsonData, &data)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Header")
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(`{"message": "Invalid JSON data"}`))
+		return c.SendStatus(fiber.StatusBadRequest)
 	}
-	credentials := strings.SplitN(string(payload), ":", 2)
-	if len(credentials) != 2 {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid Authorization Format")
-	}
-	username, password := credentials[0], credentials[1]
-
+	username, password := data["username"], data["password"]
 	if checkIfUserNameExists(username) {
-		return c.Status(fiber.StatusBadRequest).SendString("Username already exists")
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(`{"message": "User already exists"}`))
+		return c.SendStatus(fiber.StatusConflict)
 	}
 
 	err = saveCredentials(username, password)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+		c.Response().Header.Set("Content-Type", "application/json")
+		c.Response().SetBody([]byte(`{"message": "Internal Server Error"}`))
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
 	logger(username+" signed up", "INFO")
-	return c.SendString("User created successfully")
+	c.Response().Header.Set("Content-Type", "application/json")
+	c.Response().SetBody([]byte(`{"message": "User created successfully"}`))
+	return c.SendStatus(fiber.StatusCreated)
 }
 
 func websocketHandler(c *websocket.Conn) {
@@ -316,6 +318,29 @@ func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
 	return err
 }
 
+func checkLoggedIn(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if auth == "" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	tokenString := strings.Split(auth, " ")[1]
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	username := claims.Username
+	if !checkIfUserNameExists(username) {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+	c.Response().Header.Set("Content-Type", "application/json")
+	c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s"}`, username)))
+	return c.SendStatus(200)
+}
+
 func main() {
 	app := fiber.New()
 
@@ -328,10 +353,13 @@ func main() {
 		log.Fatalf("Error uploading file: %v\n", err)
 	}
 
-	app.Get("/auth/signin", signinHandler)
+	app.Post("/auth/signin", signinHandler)
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
-		tokenString := c.Query("token") // Retrieve the jwt token from the query string
+		tokenString := c.Query("auth-token", "")
+		if tokenString == "" {
+			return c.SendStatus(fiber.StatusUnauthorized)
+		}
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
@@ -340,7 +368,6 @@ func main() {
 			return c.Status(fiber.StatusUnauthorized).SendString("Unauthorized")
 		}
 
-		// Store claims in context for use in WebSocket
 		c.Locals("username", claims.Username)
 		if websocket.IsWebSocketUpgrade(c) {
 			return c.Next()
@@ -348,7 +375,9 @@ func main() {
 		return c.SendStatus(fiber.StatusUpgradeRequired)
 	}, websocket.New(websocketHandler))
 
-	app.Get("/auth/signup", signupHandler)
+	app.Post("/auth/signup", signupHandler)
+
+	app.Get("/auth/loggedIn", checkLoggedIn)
 
 	log.Fatal(app.Listen(":8080"))
 }

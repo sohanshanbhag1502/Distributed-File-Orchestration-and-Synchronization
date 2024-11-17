@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
-import { MdLogout } from "react-icons/md";
+import { MdLogout, MdLogin } from "react-icons/md";
+import Cookies from 'js-cookie';
 
 export default function NavBar() {
     const [loggedIn, setLoggedIn] = useState(false);
@@ -12,11 +13,15 @@ export default function NavBar() {
     const router = useRouter();
 
     const postLoggedIn = async () => {
-        const res = await fetch('/api/auth/loggedIn', {
-            method: 'POST',
+        const res = await fetch(process.env.NEXT_PUBLIC_SERVER_URL+'/auth/loggedIn', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Cookies.get('auth-token')}`
+            }
         });
-        const data = await res.json();
         if (res.status === 200) {
+            const data = await res.json();
             enqueueSnackbar("Logged In as "+data.username, { variant: "success" });
             setLoggedIn(true);
         } else {
@@ -25,16 +30,10 @@ export default function NavBar() {
     }
 
     const postLogout = async () => {
-        const response = await fetch('/api/auth/logout', {
-            method: 'POST',
-        });
-        if (response.status === 200) {
-            enqueueSnackbar("Logged Out Successfully", { variant: "success" });
-            setLoggedIn(false);
-            router.push('/');
-        } else {
-            enqueueSnackbar("Unable to reach the server", { variant: "error" });
-        }
+        Cookies.remove('auth-token');
+        enqueueSnackbar("Logged Out Successfully", { variant: "success" });
+        setLoggedIn(false);
+        router.push('/');
     }
 
     useEffect(() => { postLoggedIn() }, []);
@@ -64,7 +63,8 @@ export default function NavBar() {
                         :
                         <Link href="/login" className="font-bold text-xl border-2 border-white 
                         rounded-full px-4 p-1 hover:bg-white hover:text-black transition-all
-                        duration-150">
+                        duration-150 flex items-center gap-1">
+                            <MdLogin />
                             Login
                         </Link>
                     }

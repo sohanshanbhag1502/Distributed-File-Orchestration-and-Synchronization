@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, MouseEvent } from "react";
 import { useSnackbar } from "notistack";
 import { useRouter } from "next/navigation";
+import Cookies from 'js-cookie';
 
 export default function Login() {
     const { enqueueSnackbar } = useSnackbar();
@@ -14,15 +15,13 @@ export default function Login() {
 
     const postLogin =async (e : MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        const response = await fetch("/api/fetch", {
+        const response = await fetch(process.env.NEXT_PUBLIC_SERVER_URL+"/auth/signin", {
             method: "POST",
-            body: JSON.stringify({ 
-                link:"/auth/signin", 
-                body: { username, password }
-            })
+            body: JSON.stringify({ username, password })
         });
         const res = await response.json();
         if (response.status === 200) {
+            Cookies.set('auth-token', res.token);
             router.push(`/user/${res.username}`);
         }
         else if (res){

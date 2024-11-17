@@ -14,12 +14,9 @@ export default function Register() {
 
     const postRegister =async (e : MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        const response = await fetch("/api/fetch", {
+        const response = await fetch(process.env.NEXT_PUBLIC_SERVER_URL+"/auth/signup", {
             method: "POST",
-            body: JSON.stringify({ 
-                link:"/auth/signup", 
-                body: { username, password }
-            })
+            body: JSON.stringify({ username, password })
         });
         const res = await response.json();
         if (response.status === 201) {

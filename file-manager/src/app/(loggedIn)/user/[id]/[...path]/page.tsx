@@ -18,7 +18,7 @@ export default function Page() {
         ws.send(JSON.stringify({
             Operation: "listFolderContents",
             Filepath:"",
-            Dirname: `${id}/${path ? (path as string[]).join("/") : ""}`,
+            Dirname: `${id}/${path.length>0 ? (path as string[]).join("/") : ""}`,
             Newpath:"",
             Data:""
         }));
@@ -55,7 +55,7 @@ export default function Page() {
                 content-center justify-center">
                     <div className="w-full flex flex-col items-center content-center gap-5">
                         {fileList.map((file, index) => <File key={index} index={index} file={file} 
-                        id={id as string} path={path as string[]} />)}
+                        id={id as string} path={path as string[]} ws={ws}/>)}
                     </div>
                 </div>
                 :

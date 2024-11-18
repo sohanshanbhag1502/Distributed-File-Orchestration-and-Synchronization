@@ -272,7 +272,7 @@ func handleDeleteFile(request WebSocketMessage, c *websocket.Conn) error {
 
 func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
 	// check if the folder path is similar to /app/username/foldername and not /app/someotheruser/foldername
-	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	err := crud.DeleteFolder(request.Dirname)
@@ -284,7 +284,7 @@ func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
 
 func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error {
 	// check if the folder path is similar to /app/username/foldername and not /app/someotheruser/foldername
-	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	contents, err := crud.ListFolderContents(request.Dirname)
@@ -297,29 +297,37 @@ func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error
 
 func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
 	// check if the filepath is similar to /app/username/foldername and not /app/someotheruser/foldername
-	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	data, err := crud.PreviewFile(request.Filepath)
 	if err == nil {
-		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
+		//[]byte(base64.StdEncoding.EncodeToString(data))
+		c.WriteMessage(websocket.TextMessage, data)
 	}
 	return err
 }
 
 func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
-		return fmt.Errorf("Unauthorized")
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+		return fmt.Errorf("unauthorized access attempt")
 	}
 	data, err := crud.ReadFile(request.Filepath)
-	if err == nil {
-		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
+	if err != nil {
+		return fmt.Errorf("error reading file: %w", err)
 	}
-	return err
+	encodedData := base64.StdEncoding.EncodeToString(data)
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(encodedData))
+	if err != nil {
+		return fmt.Errorf("error sending message: %w", err)
+	}
+
+	return nil
 }
 
 func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)
@@ -330,7 +338,7 @@ func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error
 }
 
 func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	data, err := base64.StdEncoding.DecodeString(request.Data)
@@ -373,13 +381,14 @@ func main() {
 	app.Use(cors.New())
 
 	// Example usage of the CreateFile and DeleteFile functions
-	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))
+	// data, err := crud.ReadFile("/app/yy/a.txt")
+	// fmt.Println(data)
+	// fmt.Println(string(data))
+	// err = crud.DeleteFile("/test.txt")
 
-	err = crud.DeleteFile("/test.txt")
-
-	if err != nil {
-		log.Fatalf("Error uploading file: %v\n", err)
-	}
+	// if err != nil {
+	// 	log.Fatalf("Error uploading file: %v\n", err)
+	// }
 
 	app.Post("/auth/signin", signinHandler)
 

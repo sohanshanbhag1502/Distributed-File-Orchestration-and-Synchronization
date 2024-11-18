@@ -293,7 +293,7 @@ func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	data, err := crud.ReadFile(request.Filepath)
@@ -304,7 +304,7 @@ func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)
@@ -315,7 +315,7 @@ func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error
 }
 
 func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) {
+	if !strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
 	data, err := base64.StdEncoding.DecodeString(request.Data)

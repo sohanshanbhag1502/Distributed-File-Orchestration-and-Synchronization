@@ -48,11 +48,12 @@ export default function NewFolder({
                         ws.send(JSON.stringify({
                             Operation:"createFolder",
                             Filepath:"",
-                            Dirname: `/${id}/${path.length>0?(path as string[]).join("/")+"/":""}`+name,
+                            Dirname: `${id}/${path && path.length>0?(path as string[]).join("/")+"/":""}`+name,
                             Newpath:"",
                             Data:""
                         }))
                         setShowNewFolder(false);
+                        e.stopPropagation();
                     }}>
                         Create Folder
                     </button>

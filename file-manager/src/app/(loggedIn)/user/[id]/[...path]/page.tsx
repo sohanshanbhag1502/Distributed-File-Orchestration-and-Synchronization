@@ -13,15 +13,28 @@ export default function Page() {
     const { enqueueSnackbar } = useSnackbar();
 
     const [fileList, setFileList] = useState<string[]>([]);
+    const [content, setContent] = useState<string>("");
+    const name = (path as string[])[path.length-1];
 
     const retriveFileList = () => {
-        ws.send(JSON.stringify({
-            Operation: "listFolderContents",
-            Filepath:"",
-            Dirname: `${id}/${path.length>0 ? (path as string[]).join("/") : ""}`,
-            Newpath:"",
-            Data:""
-        }));
+        if (name.includes(".")){
+            ws.send(JSON.stringify({
+                Operation: "previewFile",
+                Filepath:`${id}/${path.length>0 ? (path as string[]).join("/") : ""}`,
+                Dirname: "",
+                Newpath:"",
+                Data:""
+            }));
+        }
+        else{
+            ws.send(JSON.stringify({
+                Operation: "listFolderContents",
+                Filepath:"",
+                Dirname: `${id}/${path.length>0 ? (path as string[]).join("/") : ""}`,
+                Newpath:"",
+                Data:""
+            }));
+        }
     }
 
     useEffect(() => {
@@ -32,11 +45,18 @@ export default function Page() {
                     data = JSON.parse(msg.data);
                 }
                 catch{
-                    enqueueSnackbar(msg.data, { variant: "success" });
-                    retriveFileList();
+                    const ms: string = msg.data;
+                    if (ms.startsWith("preview:")){
+                        setContent(msg.data.slice(8));
+                        return;
+                    }
+                    else{
+                        enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
+                        retriveFileList();
+                    }
                     return
                 }
-                setFileList(data.sort());
+                setFileList(data);
             }
             ws.onopen = retriveFileList;
             retriveFileList();
@@ -50,19 +70,30 @@ export default function Page() {
     return (
         <>
             {
-                fileList.length > 0 ?
-                <div className="w-full pt-8 flex custom-container-2 flex-col items-center
-                content-center justify-center">
-                    <div className="w-full flex flex-col items-center content-center gap-5">
-                        {fileList.map((file, index) => <File key={index} index={index} file={file} 
-                        id={id as string} path={path as string[]} ws={ws}/>)}
+                !name.includes(".") ?
+                    fileList.length > 0 ?
+                    <div className="w-full pt-8 flex custom-container-2 flex-col items-center
+                    content-center justify-center">
+                        <div className="w-full flex flex-col items-center content-center gap-5">
+                            {fileList.map((file, index) => <File key={index} index={index} file={file} 
+                            id={id as string} path={path as string[]} ws={ws}/>)}
+                        </div>
                     </div>
-                </div>
+                    :
+                    <div className="w-full pt-8 flex custom-container-2 flex-col items-center
+                    content-center justify-center h-[60vh]">
+                        <img src="/empty.png" alt="Empty Folder" className="w-[10rem] opacity-40" />
+                        <p className="text-lg font-semibold opacity-60">This folder is empty</p>
+                    </div>
                 :
                 <div className="w-full pt-8 flex custom-container-2 flex-col items-center
-                content-center justify-center h-[60vh]">
-                    <img src="/empty.png" alt="Empty Folder" className="w-[10rem] opacity-40" />
-                    <p className="text-lg font-semibold opacity-60">This folder is empty</p>
+                    content-center justify-center">
+                    <div className="w-full flex flex-col items-center content-center gap-5">
+                        <p className="text-2xl font-semibold">{name}</p>
+                        <textarea className="w-full h-[60vh] border border-gray-300 rounded-md p-4
+                        bg-black"
+                        value={content} readOnly/>
+                    </div>
                 </div>
             }
         </>

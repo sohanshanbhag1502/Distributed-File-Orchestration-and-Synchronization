@@ -33,7 +33,8 @@ export default function Page() {
                     data = JSON.parse(msg.data);
                 }
                 catch{
-                    enqueueSnackbar(msg.data, { variant: "success" });
+                    const ms: string = msg.data;
+                    enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
                     retriveFileList();
                     return
                 }

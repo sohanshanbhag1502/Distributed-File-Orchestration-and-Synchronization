@@ -22,6 +22,10 @@ export default function ButtonBar() {
         }
     }, [params])
 
+    useEffect(() => {
+        
+    })
+
     return (
         <>
             {showNewFolder && <NewFolder setShowNewFolder={setShowNewFolder}/>}

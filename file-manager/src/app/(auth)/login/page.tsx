@@ -22,6 +22,7 @@ export default function Login() {
         const res = await response.json();
         if (response.status === 200) {
             Cookies.set('auth-token', res.token);
+            Cookies.set("username", res.username);
             router.push(`/user/${res.username}`);
         }
         else if (res){

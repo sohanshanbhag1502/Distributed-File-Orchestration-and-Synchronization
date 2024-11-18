@@ -243,6 +243,9 @@ func handleWebSocketConnection(c *websocket.Conn) {
 // Helper functions for each CRUD operation
 
 func handleCreateFile(request WebSocketMessage, c *websocket.Conn) error {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	data, err := base64.StdEncoding.DecodeString(request.Data)
 	if err != nil {
 		return err
@@ -255,6 +258,9 @@ func handleCreateFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleCreateFolder(request WebSocketMessage, c *websocket.Conn) error {
+	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	err := crud.CreateFolder(request.Dirname)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte("Folder created successfully"))
@@ -263,6 +269,9 @@ func handleCreateFolder(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleDeleteFile(request WebSocketMessage, c *websocket.Conn) error {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	err := crud.DeleteFile(request.Filepath)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte("File deleted successfully"))

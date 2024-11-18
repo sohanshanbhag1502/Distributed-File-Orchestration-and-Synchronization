@@ -45,10 +45,11 @@ export default function NewFolder({
                     cursor-pointer hover:bg-white hover:text-black"
                     onClick={(e)=>{
                         e.preventDefault()
+                        console.log(`/${id}/${path.length>0?(path as string[]).join("/")+"/":""}`+name)
                         ws.send(JSON.stringify({
                             Operation:"createFolder",
                             Filepath:"",
-                            Dirname: `/${id}/${path?(path+"/"):""}`+name,
+                            Dirname: `/${id}/${path.length>0?(path as string[]).join("/")+"/":""}`+name,
                             Newpath:"",
                             Data:""
                         }))

@@ -269,6 +269,10 @@ func handleDeleteFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
+	// check if the folder path is similar to /app/username/foldername and not /app/someotheruser/foldername
+	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	err := crud.DeleteFolder(request.Dirname)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte("Folder deleted successfully"))
@@ -277,6 +281,10 @@ func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error {
+	// check if the folder path is similar to /app/username/foldername and not /app/someotheruser/foldername
+	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	contents, err := crud.ListFolderContents(request.Dirname)
 	if err == nil {
 		response, _ := json.Marshal(contents)
@@ -286,6 +294,10 @@ func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error
 }
 
 func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
+	// check if the filepath is similar to /app/username/foldername and not /app/someotheruser/foldername
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) {
+		return fmt.Errorf("Unauthorized")
+	}
 	data, err := crud.PreviewFile(request.Filepath)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
@@ -346,7 +358,7 @@ func checkLoggedIn(c *fiber.Ctx) error {
 
 func main() {
 	app := fiber.New()
-	
+
 	app.Use(cors.New())
 
 	// Example usage of the CreateFile and DeleteFile functions

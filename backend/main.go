@@ -169,6 +169,8 @@ func signupHandler(c *fiber.Ctx) error {
 	logger(username+" signed up", "INFO")
 	c.Response().Header.Set("Content-Type", "application/json")
 	c.Response().SetBody([]byte(`{"message": "User created successfully"}`))
+
+	crud.CreateFolder("/app/" + username)
 	return c.SendStatus(fiber.StatusCreated)
 }
 

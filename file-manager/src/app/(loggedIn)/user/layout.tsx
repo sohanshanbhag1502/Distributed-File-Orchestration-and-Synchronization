@@ -32,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{
 
     return (
         <div className="w-full flex flex-col content-center items-start p-10">
-            <WebSocketContext.Provider value={socket}>
+            {/* <WebSocketContext.Provider value={socket}> */}
                 <div className="w-full flex content-center items-center justify-between">
                     <p className="text-3xl flex items-center content-center gap-3">
                         <FaFolderOpen />
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: Readonly<{
                     </div>
                 </div>
                 {children}
-            </WebSocketContext.Provider>
+            {/* </WebSocketContext.Provider> */}
         </div>
     );
 }

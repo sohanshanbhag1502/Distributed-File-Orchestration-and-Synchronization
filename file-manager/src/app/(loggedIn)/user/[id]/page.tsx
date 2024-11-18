@@ -6,47 +6,79 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useSnackbar } from "notistack";
 import File from "@/components/File";
+import Cookies from "js-cookie";
 
 export default function Page() {
 
-    const ws = useContext(WebSocketContext);
+    // const ws = useContext(WebSocketContext);
     const { id } = useParams();
     const { enqueueSnackbar } = useSnackbar();
 
     const [fileList, setFileList] = useState<string[]>([]);
 
-    const retriveFileList = () => {
-        ws.send(JSON.stringify({
-            Operation: "listFolderContents",
-            Filepath:"",
-            Dirname: `${id}`,
-            Newpath:"",
-            Data:""
-        }));
-    }
+    // const retriveFileList = () => {
+    //     if (ws.readyState !== ws.OPEN) return;
+    //     ws.send(JSON.stringify({
+    //         Operation: "listFolderContents",
+    //         Filepath:"",
+    //         Dirname: `${id}`,
+    //         Newpath:"",
+    //         Data:""
+    //     }));
+    // }
 
     useEffect(() => {
-        try{
-            ws.onmessage = (msg) => {
-                let data=[];
-                try{
-                    data = JSON.parse(msg.data);
-                }
-                catch{
-                    enqueueSnackbar(msg.data, { variant: "success" });
-                    retriveFileList();
-                    return
-                }
-                setFileList(data.sort());
+        const ws2 = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL+"?auth-token="+ Cookies.get("auth-token"));
+
+        ws2.onopen = () => {
+            ws2.send(JSON.stringify({
+                Operation: "listFolderContents",
+                Filepath:"",
+                Dirname: `${id}`,
+                Newpath:"",
+                Data:""
+            }));
+        };
+
+        ws2.onmessage = (msg) => {
+            let data=[];
+            try{
+                data = JSON.parse(msg.data);
             }
-            ws.onopen = retriveFileList;
-            retriveFileList();
+            catch {
+                enqueueSnackbar(msg.data, { variant: "success" });
+                return
+            }
+            setFileList(data.sort());
         }
-        catch(e){
-            console.log(e);
-            return
+
+        return () => {
+            ws2.close();
         }
-    }, [ws, id]);
+    }, []);
+
+    // useEffect(() => {
+    //     try{
+    //         ws.onmessage = (msg) => {
+    //             let data=[];
+    //             try{
+    //                 data = JSON.parse(msg.data);
+    //             }
+    //             catch{
+    //                 enqueueSnackbar(msg.data, { variant: "success" });
+    //                 retriveFileList();
+    //                 return
+    //             }
+    //             setFileList(data.sort());
+    //         }
+    //         ws.onopen = retriveFileList;
+    //         retriveFileList();
+    //     }
+    //     catch(e){
+    //         console.log(e);
+    //         return
+    //     }
+    // }, [ws, id]);
 
     return (
         <>

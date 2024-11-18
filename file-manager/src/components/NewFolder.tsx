@@ -3,6 +3,7 @@ import TextField from '@mui/material/TextField';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useContext, useState } from "react";
 import { WebSocketContext } from "@/app/(loggedIn)/user/layout";
+import { useParams } from "next/navigation";
 
 const darkTheme = createTheme({
     palette: {
@@ -17,6 +18,7 @@ export default function NewFolder({
 }) {
 
     const [name, setName] = useState("");
+    const { id, path } = useParams();
 
     const ws = useContext(WebSocketContext);
 
@@ -45,7 +47,10 @@ export default function NewFolder({
                         e.preventDefault()
                         ws.send(JSON.stringify({
                             Operation:"createFolder",
-                            Dirname: name
+                            Filepath:"",
+                            Dirname: `/${id}/${path?(path+"/"):""}`+name,
+                            Newpath:"",
+                            Data:""
                         }))
                         setShowNewFolder(false);
                     }}>

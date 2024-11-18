@@ -6,31 +6,49 @@ import { useState } from "react";
 import { FaDownload } from "react-icons/fa6";
 import { BiSolidRename } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
+import { useParams } from "next/navigation";
 import FileIcon from "@/components/FileIcon";
+import { useSnackbar } from "notistack";
 
 export default function Page() {
 
     const ws = useContext(WebSocketContext);
+    const { id } = useParams();
+    const { enqueueSnackbar } = useSnackbar();
 
     const [fileList, setFileList] = useState<string[]>([]);
 
-    useEffect(() => {
-        if (ws && ws.readyState === 1)
-            ws.onmessage = (msg) => {
-                const data = JSON.parse(msg.data);
-                console.log(data);
-                setFileList(data.sort());
-            }
-    }, [ws])
+    const retriveFileList = () => {
+        ws.send(JSON.stringify({
+            Operation: "listFolderContents",
+            Filepath:"",
+            Dirname: `${id}`,
+            Newpath:"",
+            Data:""
+        }));
+    }
 
     useEffect(() => {
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({
-                Operation: "listFolderContents",
-                Dirname: "/"
-            }));
+        try{
+            ws.onmessage = (msg) => {
+                let data=[];
+                try{
+                    data = JSON.parse(msg.data);
+                }
+                catch{
+                    enqueueSnackbar(msg.data, { variant: "success" });
+                    retriveFileList();
+                    return
+                }
+                setFileList(data.sort());
+            }
+            retriveFileList();
         }
-    }, [ws])
+        catch(e){
+            console.log(e);
+            return
+        }
+    }, [ws, id]);
 
     return (
         <>
@@ -50,7 +68,9 @@ export default function Page() {
                                         file.split(".")[1]
                                         : "Folder"
                                     } />
-                                    <p className="text-xl font-medium">{file}</p>
+                                    <p className="text-xl font-medium">{file.includes(".") ?
+                                        file
+                                        : file.slice(0, -1)}</p>
                                 </div>
                                 <div className={"flex items-center content-center \
                                 justify-between "+(file.includes(".")?"w-[15%]":"w-[8.5%]")}>

@@ -210,6 +210,7 @@ func handleWebSocketConnection(c *websocket.Conn) {
 		}
 		request.Filepath = "/app/" + request.Filepath
 		request.Dirname = "/app/" + request.Dirname
+		request.NewPath = "/app/" + request.NewPath
 		switch request.Operation {
 		case "createFile":
 			err = handleCreateFile(request, c)
@@ -338,7 +339,7 @@ func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") || strings.Contains(request.NewPath, "..") || !strings.HasPrefix(request.NewPath, "/app/"+c.Locals("username").(string)) {
 		return fmt.Errorf("Unauthorized")
 	}
 	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)

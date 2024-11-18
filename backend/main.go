@@ -230,7 +230,7 @@ func handleWebSocketConnection(c *websocket.Conn) {
 			err = handleUpdateFile(request, c)
 		default:
 			c.WriteMessage(websocket.TextMessage, []byte("Error: Unknown operation"))
-			continue
+			return
 		}
 
 		if err != nil {
@@ -373,13 +373,13 @@ func main() {
 	app.Use(cors.New())
 
 	// Example usage of the CreateFile and DeleteFile functions
-	err := crud.CreateFile("/test.txt", []byte("Hello, World!"))
+	// err := crud.CreateFile("/test.txt", []byte("Hello, World!"))
 
-	err = crud.DeleteFile("/test.txt")
+	// err = crud.DeleteFile("/test.txt")
 
-	if err != nil {
-		log.Fatalf("Error uploading file: %v\n", err)
-	}
+	// if err != nil {
+	// 	log.Fatalf("Error uploading file: %v\n", err)
+	// }
 
 	app.Post("/auth/signin", signinHandler)
 

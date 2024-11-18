@@ -1,4 +1,18 @@
+"use client"
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import Cookies from "js-cookie"; 
+
 export default function Home() {
+    const router = useRouter();
+
+    useEffect(() => {
+        if (Cookies.get('auth-token') != null) {
+            router.push(`/user/${Cookies.get('username')}`);
+        }
+    }, []) 
+
     return (
         <div className="w-full h-full flex flex-col items-center content-center justify-center p-10 gap-10">
             <p className="font-bold text-6xl mt-[10%]">Welcome to the File Manager</p>

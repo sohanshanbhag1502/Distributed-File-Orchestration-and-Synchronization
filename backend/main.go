@@ -194,11 +194,12 @@ func handleWebSocketConnection(c *websocket.Conn) {
 
 	for {
 		_, msg, err := c.ReadMessage()
-		fmt.Println(msg)
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
+
+		log.Printf("Received message: %s", string(msg))
 
 		var request WebSocketMessage
 		err = json.Unmarshal(msg, &request)
@@ -283,10 +284,10 @@ func handleDeleteFolder(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error {
-	// check if the folder path is similar to /app/username/foldername and not /app/someotheruser/foldername
 	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) {
 		return fmt.Errorf("Unauthorized")
 	}
+	log.Println(request.Dirname)
 	contents, err := crud.ListFolderContents(request.Dirname)
 	if err == nil {
 		response, _ := json.Marshal(contents)
@@ -362,6 +363,7 @@ func checkLoggedIn(c *fiber.Ctx) error {
 	if !checkIfUserNameExists(username) {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	c.Locals("username", username)
 	c.Response().Header.Set("Content-Type", "application/json")
 	c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s"}`, username)))
 	return c.SendStatus(200)
@@ -385,7 +387,6 @@ func main() {
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
 		tokenString := c.Query("auth-token", "")
-		fmt.Println(tokenString)
 		if tokenString == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}

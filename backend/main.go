@@ -293,6 +293,9 @@ func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
+	if (!strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string))) {
+		return fmt.Errorf("Invalid path")
+	}
 	data, err := crud.ReadFile(request.Filepath)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte(base64.StdEncoding.EncodeToString(data)))
@@ -301,6 +304,9 @@ func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
+	if (!strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string))) {
+		return fmt.Errorf("Invalid path")
+	}
 	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)
 	if err == nil {
 		c.WriteMessage(websocket.TextMessage, []byte("File or folder renamed successfully"))
@@ -309,6 +315,9 @@ func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error
 }
 
 func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
+	if (!strings.HasPrefix(request.Filepath, "/app/" + c.Locals("username").(string))) {
+		return fmt.Errorf("Invalid path")
+	}
 	data, err := base64.StdEncoding.DecodeString(request.Data)
 	if err != nil {
 		return err

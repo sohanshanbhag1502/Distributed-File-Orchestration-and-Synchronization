@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -315,7 +316,8 @@ func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
 	data, err := crud.PreviewFile(request.Filepath)
 	if err == nil {
 		//[]byte(base64.StdEncoding.EncodeToString(data))
-		c.WriteMessage(websocket.TextMessage, data)
+		ret := [][]byte{[]byte("preview:"), data}
+		c.WriteMessage(websocket.TextMessage, bytes.Join(ret, []byte("")))
 	}
 	return err
 }

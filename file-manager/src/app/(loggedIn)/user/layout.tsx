@@ -1,10 +1,11 @@
 "use client"
 
 import ButtonBar from "@/components/ButtonBar";
-import { FaFolderOpen } from "react-icons/fa";
+import { FaFolderOpen,  FaFile } from "react-icons/fa";
 import { createContext } from "react";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { useParams } from "next/navigation";
 
 const websocketClient = () => {
     const ws = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL+"?auth-token="+
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{
 }>) {
     
     const [socket, setSocket] = useState<WebSocket>(null!);
+    const {path} = useParams();
 
     useEffect(()=>{
         setSocket(websocketClient());
@@ -35,8 +37,12 @@ export default function RootLayout({ children }: Readonly<{
             <WebSocketContext.Provider value={socket}>
                 <div className="w-full flex content-center items-center justify-between">
                     <p className="text-3xl flex items-center content-center gap-3">
-                        <FaFolderOpen />
-                        Root Directory
+                        {path && path[path.length-1].includes(".") ?
+                            <FaFile />
+                            :
+                            <FaFolderOpen />
+                        }
+                        {path ? path[path.length-1] : "Root Directory"}
                     </p>
                     <div className="flex gap-4">
                         <ButtonBar />

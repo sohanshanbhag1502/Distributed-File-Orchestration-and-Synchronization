@@ -56,7 +56,7 @@ export default function Page() {
                 content-center justify-center">
                     <div className="w-full flex flex-col items-center content-center gap-5">
                         {fileList.map((file, index) => <File key={index} index={index} file={file}
-                        id={id as string} path={[]} />)}
+                        id={id as string} path={[]} ws={ws}/>)}
                     </div>
                 </div>
                 :

@@ -11,12 +11,12 @@ const darkTheme = createTheme({
     },
 });
 
-export default function NewFolder({
-    setShowNewFolder
+export default function Rename({
+    setShowRename, oldName
 }: {
-    setShowNewFolder: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowRename: React.Dispatch<React.SetStateAction<boolean>>;
+    oldName: string;
 }) {
-
     const [name, setName] = useState("");
     const { id, path } = useParams();
 
@@ -29,14 +29,14 @@ export default function NewFolder({
                 <div className="flex flex-col content-center items-center justify-center bg-black w-1/3 
                 shadow-md shadow-white rounded-2xl p-10 gap-4">
                     <div className="w-full flex justify-between">
-                        <p className="text-xl font-semibold">Create New Folder</p>
+                        <p className="text-xl font-semibold">Rename {oldName.replace('/', '')}</p>
                         <button className="text-2xl font-bold hover:text-gray-500" onClick={()=>{
-                            setShowNewFolder(false);
+                            setShowRename(false);
                         }}>
                             <IoMdClose />
                         </button>
                     </div>
-                    <TextField label="Folder Name" variant="outlined" 
+                    <TextField label="New Name" variant="outlined" 
                     className="w-full" autoFocus 
                     value={name}
                     onChange={(e) => setName(e.target.value)}/>
@@ -46,15 +46,18 @@ export default function NewFolder({
                     onClick={(e)=>{
                         e.preventDefault()
                         ws.send(JSON.stringify({
-                            Operation:"createFolder",
-                            Filepath:"",
-                            Dirname: `/${id}/${path.length>0?(path as string[]).join("/")+"/":""}`+name,
-                            Newpath:"",
+                            Operation:"renameFileOrFolder",
+                            Filepath: `${id}/${path && (path as string[]).length>0?
+                            (path as string[]).join("/")+"/":""}`+oldName,
+                            Dirname: "",
+                            Newpath:`${id}/${path && (path as string[]).length>0?
+                            (path as string[]).join("/")+"/":""}`+name+"/",
                             Data:""
                         }))
-                        setShowNewFolder(false);
+                        setShowRename(false);
+                        e.stopPropagation();
                     }}>
-                        Create Folder
+                        Rename
                     </button>
                 </div>
             </div>

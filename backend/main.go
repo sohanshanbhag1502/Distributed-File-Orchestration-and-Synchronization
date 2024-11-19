@@ -331,8 +331,10 @@ func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
 		return fmt.Errorf("error reading file: %w", err)
 	}
 	encodedData := base64.StdEncoding.EncodeToString(data)
-
-	err = c.WriteMessage(websocket.TextMessage, []byte(encodedData))
+	filePath := strings.Split(request.Filepath, "/")
+	fileName := filePath[len(filePath)-1]
+	err = c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("download:%s|",fileName)+
+	encodedData))
 	if err != nil {
 		return fmt.Errorf("error sending message: %w", err)
 	}

@@ -41,20 +41,45 @@ export default function Page() {
         try{
             ws.onmessage = (msg) => {
                 let data=[];
+                const ms: string = msg.data;
                 try{
-                    data = JSON.parse(msg.data);
-                }
-                catch{
-                    const ms: string = msg.data;
-                    console.log(ms);
                     if (ms.startsWith("preview:")){
                         setContent(msg.data.slice(8));
                         return;
                     }
-                    else{
-                        enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
-                        retriveFileList();
+                    else if (ms.startsWith("download:")) {
+                        const datas:string[] = ms.slice(9).split("|");
+                        const filename = datas[0];
+                        const base64Data = datas[1];
+                        const binaryData = atob(base64Data);
+                        const byteArray = new Uint8Array(binaryData.length);
+                
+                        for (let i = 0; i < binaryData.length; i++) {
+                          byteArray[i] = binaryData.charCodeAt(i);
+                        }
+                
+                        const blob = new Blob([byteArray], { type: "octet/stream" });
+                        const url = URL.createObjectURL(blob);
+                
+                        const a = document.createElement("a");
+                        a.style.display = "none";
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                
+                        enqueueSnackbar("File downloaded successfully", { variant:"success" });
+                        return;
                     }
+                    else{
+                        data = JSON.parse(ms);
+                    }
+                }
+                catch{
+                    enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
+                    retriveFileList();
                     return
                 }
                 setFileList(data);

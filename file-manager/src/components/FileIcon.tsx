@@ -13,7 +13,7 @@ export default function FileIcon({ extension }: Readonly<{
                 <FaFileImage fontSize={40} className="text-blue-300" /> :
                 extension === "docx" || extension === "doc" ?
                 <FaFileWord fontSize={40} className="text-blue-500" /> :
-                extension === "xlsx" || extension === "xls" ?
+                extension === "xlsx" || extension === "xls" || extension === "csv" ?
                 <FaFileExcel fontSize={40} className="text-green-500" /> :
                 extension === "pptx" || extension === "ppt" ?
                 <FaFilePowerpoint fontSize={40} className="text-yellow-500" /> :

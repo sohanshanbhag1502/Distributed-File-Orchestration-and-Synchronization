@@ -48,7 +48,8 @@ export default function Page() {
                     const ms: string = msg.data;
                     console.log(ms);
                     if (ms.startsWith("preview:")){
-                        setContent(msg.data.slice(8));
+                        const decodedContent = atob(msg.data.slice(8));
+                        setContent(decodedContent);
                         return;
                     }
                     else{

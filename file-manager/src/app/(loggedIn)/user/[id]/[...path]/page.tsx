@@ -53,7 +53,7 @@ export default function Page() {
                         return;
                     }
                     else{
-                        enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
+                        // enqueueSnackbar(ms, { variant: ms.includes("Error")?"error":"success" });
                         retriveFileList();
                     }
                     return

@@ -46,6 +46,7 @@ export default function Page() {
                 }
                 catch{
                     const ms: string = msg.data;
+                    console.log(ms);
                     if (ms.startsWith("preview:")){
                         setContent(msg.data.slice(8));
                         return;

@@ -361,7 +361,7 @@ func handleUpdateFile(request WebSocketMessage, c *websocket.Conn) error {
 	}
 	err = crud.UpdateFile(request.Filepath, data)
 	if err == nil {
-		c.WriteMessage(websocket.TextMessage, []byte("File updated successfully"))
+		c.WriteMessage(websocket.TextMessage, []byte("File uploaded successfully"))
 	}
 	return err
 }

@@ -51,7 +51,7 @@ export default function Rename({
                             (path as string[]).join("/")+"/":""}`+oldName,
                             Dirname: "",
                             Newpath:`${id}/${path && (path as string[]).length>0?
-                            (path as string[]).join("/")+"/":""}`+name+"/",
+                            (path as string[]).join("/")+"/":""}`+name,
                             Data:""
                         }))
                         setShowRename(false);

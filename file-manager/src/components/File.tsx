@@ -35,7 +35,18 @@ export default function File({index, file, id, path, ws}:{index:number, file:str
                 <div className={"flex items-center content-center \
                 justify-between "+(file.includes(".")?"w-[15%]":"w-[8.5%]")}>
                     {file.includes(".") && <FaDownload fontSize={30}
-                    className="hover:text-gray-400"/>}
+                    className="hover:text-gray-400"
+                    onClick={(e)=>{
+                        e.preventDefault();
+                        ws.send(JSON.stringify({
+                            Operation: "readFile",
+                            Filepath: `${id}/${path.length>0?(path as string[]).join("/")+"/":""}${file}`,
+                            Dirname: "",
+                            Newpath: "",
+                            Data: ""
+                        }))
+                        e.stopPropagation();
+                    }}/>}
                     <BiSolidRename fontSize={30}
                     className="hover:text-gray-400"
                     onClick={(e)=>{

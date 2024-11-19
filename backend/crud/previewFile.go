@@ -24,6 +24,11 @@ func PreviewFile(filepath string) ([]byte, error) {
 
     // read 1024 bytes from the file
     data := make([]byte, 1024)
+
+    for i := range data {
+        data[i] = ' '
+    }
+
     _, err = file.Read(data)
     if err != nil {
         return nil, err

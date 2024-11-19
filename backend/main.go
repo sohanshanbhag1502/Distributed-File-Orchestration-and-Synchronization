@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -194,11 +195,12 @@ func handleWebSocketConnection(c *websocket.Conn) {
 
 	for {
 		_, msg, err := c.ReadMessage()
-		fmt.Println(msg)
 		if err != nil {
 			log.Println("read:", err)
 			break
 		}
+
+		log.Printf("Received message: %s", string(msg))
 
 		var request WebSocketMessage
 		err = json.Unmarshal(msg, &request)
@@ -209,6 +211,7 @@ func handleWebSocketConnection(c *websocket.Conn) {
 		}
 		request.Filepath = "/app/" + request.Filepath
 		request.Dirname = "/app/" + request.Dirname
+		request.NewPath = "/app/" + request.NewPath
 		switch request.Operation {
 		case "createFile":
 			err = handleCreateFile(request, c)
@@ -230,7 +233,7 @@ func handleWebSocketConnection(c *websocket.Conn) {
 			err = handleUpdateFile(request, c)
 		default:
 			c.WriteMessage(websocket.TextMessage, []byte("Error: Unknown operation"))
-			continue
+			return
 		}
 
 		if err != nil {
@@ -296,6 +299,7 @@ func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error
 	if !strings.HasPrefix(request.Dirname, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
 		return fmt.Errorf("Unauthorized")
 	}
+	log.Println(request.Dirname)
 	contents, err := crud.ListFolderContents(request.Dirname)
 	if err == nil {
 		response, _ := json.Marshal(contents)
@@ -312,7 +316,8 @@ func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
 	data, err := crud.PreviewFile(request.Filepath)
 	if err == nil {
 		//[]byte(base64.StdEncoding.EncodeToString(data))
-		c.WriteMessage(websocket.TextMessage, data)
+		ret := [][]byte{[]byte("preview:"), data}
+		c.WriteMessage(websocket.TextMessage, bytes.Join(ret, []byte("")))
 	}
 	return err
 }
@@ -336,7 +341,7 @@ func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {
 }
 
 func handleRenameFileOrFolder(request WebSocketMessage, c *websocket.Conn) error {
-	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") || strings.Contains(request.NewPath, "..") || !strings.HasPrefix(request.NewPath, "/app/"+c.Locals("username").(string)) {
 		return fmt.Errorf("Unauthorized")
 	}
 	err := crud.RenameFileOrFolder(request.Filepath, request.NewPath)
@@ -379,6 +384,7 @@ func checkLoggedIn(c *fiber.Ctx) error {
 	if !checkIfUserNameExists(username) {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
+	c.Locals("username", username)
 	c.Response().Header.Set("Content-Type", "application/json")
 	c.Response().SetBody([]byte(fmt.Sprintf(`{"username": "%s"}`, username)))
 	return c.SendStatus(200)
@@ -389,21 +395,10 @@ func main() {
 
 	app.Use(cors.New())
 
-	// Example usage of the CreateFile and DeleteFile functions
-	// data, err := crud.ReadFile("/app/yy/a.txt")
-	// fmt.Println(data)
-	// fmt.Println(string(data))
-	// err = crud.DeleteFile("/test.txt")
-
-	// if err != nil {
-	// 	log.Fatalf("Error uploading file: %v\n", err)
-	// }
-
 	app.Post("/auth/signin", signinHandler)
 
 	app.Get("/ws", func(c *fiber.Ctx) error {
 		tokenString := c.Query("auth-token", "")
-		fmt.Println(tokenString)
 		if tokenString == "" {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}

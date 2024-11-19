@@ -64,13 +64,14 @@ export default function ButtonBar() {
                 <IoMdArrowRoundBack />
                 Back
             </button>
-            <button className="font-bold text-xl border-2 border-white rounded-full px-4 p-1
-            transition-all duration-150 flex items-center gap-2 disabled:opacity-50 cursor-pointer 
-            hover:bg-white hover:text-black"
+            <button className={"font-bold text-xl border-2 border-white rounded-full px-4 p-1 \
+            transition-all duration-150 flex items-center gap-2 disabled:opacity-50 "+
+            ((path?(path[path.length-1].includes(".")):false)?"cursor-not-allowed":"cursor-pointer hover:bg-white hover:text-black")}
             onClick={(e)=>{
                 e.preventDefault();
                 setShowNewFolder(!showNewFolder);
-            }}>
+            }}
+            disabled={path?(path[path.length-1].includes(".")):false}>
                 <TbFolderPlus />
                 Create new folder
             </button>

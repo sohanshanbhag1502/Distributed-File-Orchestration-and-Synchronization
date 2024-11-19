@@ -23,6 +23,7 @@ export default function ButtonBar() {
     const params = useParams();
     const context = useContext(WebSocketContext)
     const refUploadFile = useRef<any>(null);
+    const path = params.path as string[];
   
     const [showNewFolder, setShowNewFolder] = useState(false);
 

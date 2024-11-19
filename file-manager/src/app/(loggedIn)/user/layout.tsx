@@ -16,6 +16,9 @@ const websocketClient = () => {
     ws.onclose = () => {
         console.log("Disconnected from server");
     };
+    window.addEventListener("cleanup", () => {
+        ws.close();
+    });
     return ws;
 }
 

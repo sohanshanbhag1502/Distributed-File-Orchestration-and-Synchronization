@@ -23,6 +23,7 @@ export default function NavBar() {
         if (res.status === 200) {
             const data = await res.json();
             enqueueSnackbar("Logged In as "+data.username, { variant: "success" });
+            router.push(`/user/${data.username}`);
             setLoggedIn(true);
         } else {
             setLoggedIn(false);
@@ -31,6 +32,7 @@ export default function NavBar() {
 
     const postLogout = async () => {
         Cookies.remove('auth-token');
+        window.dispatchEvent(new Event('cleanup'));
         enqueueSnackbar("Logged Out Successfully", { variant: "success" });
         setLoggedIn(false);
         router.push('/');

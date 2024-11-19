@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { useContext, useState } from "react";
 import { WebSocketContext } from "@/app/(loggedIn)/user/layout";
 import { useParams } from "next/navigation";
+import { useSnackbar } from "notistack";
 
 const darkTheme = createTheme({
     palette: {
@@ -19,6 +20,7 @@ export default function NewFolder({
 
     const [name, setName] = useState("");
     const { id, path } = useParams();
+    const { enqueueSnackbar } = useSnackbar();
 
     const ws = useContext(WebSocketContext);
 
@@ -44,6 +46,13 @@ export default function NewFolder({
                     px-4 p-1 transition-all duration-150 flex items-center gap-2 disabled:opacity-50 
                     cursor-pointer hover:bg-white hover:text-black"
                     onClick={(e)=>{
+                        const RegEx = /^[a-z0-9]+$/i; 
+                        const Valid = RegEx.test(name.trim());
+                        if (!Valid) {
+                            enqueueSnackbar("Invalid Folder Name", { variant: "error" });
+                            e.stopPropagation();
+                            return;
+                        }
                         e.preventDefault()
                         ws.send(JSON.stringify({
                             Operation:"createFolder",

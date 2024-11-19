@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	// "bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -309,17 +309,25 @@ func handleListFolderContents(request WebSocketMessage, c *websocket.Conn) error
 }
 
 func handlePreviewFile(request WebSocketMessage, c *websocket.Conn) error {
-	// check if the filepath is similar to /app/username/foldername and not /app/someotheruser/foldername
-	if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
-		return fmt.Errorf("Unauthorized")
-	}
-	data, err := crud.PreviewFile(request.Filepath)
-	if err == nil {
-		//[]byte(base64.StdEncoding.EncodeToString(data))
-		ret := [][]byte{[]byte("preview:"), data}
-		c.WriteMessage(websocket.TextMessage, bytes.Join(ret, []byte("")))
-	}
-	return err
+    if !strings.HasPrefix(request.Filepath, "/app/"+c.Locals("username").(string)) || strings.Contains(request.Filepath, "..") {
+        return fmt.Errorf("Unauthorized")
+    }
+    data, err := crud.PreviewFile(request.Filepath)
+    if err != nil {
+        log.Printf("PreviewFile error: %v", err)
+        return err
+    }
+
+    if len(data) == 0 {
+        return fmt.Errorf("PreviewFile returned empty data")
+    }
+
+    encodedData := base64.StdEncoding.EncodeToString(data)
+    err = c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("preview:%s", encodedData)))
+    if err != nil {
+        log.Printf("WebSocket write error: %v", err)
+    }
+    return err
 }
 
 func handleReadFile(request WebSocketMessage, c *websocket.Conn) error {

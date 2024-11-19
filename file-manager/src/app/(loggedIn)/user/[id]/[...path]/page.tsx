@@ -44,7 +44,8 @@ export default function Page() {
                 const ms: string = msg.data;
                 try{
                     if (ms.startsWith("preview:")){
-                        setContent(msg.data.slice(8));
+                        const decodedContent = atob(msg.data.slice(8));
+                        setContent(decodedContent);
                         return;
                     }
                     else if (ms.startsWith("download:")) {

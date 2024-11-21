@@ -13,7 +13,7 @@ For installing Hadoop refer [here](https://medium.com/@charan.n_22122016/install
 - Install npm packages:
 ```
 cd ./file-manager
-npm run dev
+npm i
 ```
 - Start Hadoop:
 ```
